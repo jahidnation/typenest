@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Suggest",
+  "name": "TypeNext",
   "version": "1.0.0",
-  "description": "Smart real-time word and sentence auto-complete dictionary with Google spellcheck.",
+  "description": "Smart real-time word and sentence auto-complete dictionary with Google spellcheck and magic translation.",
   "permissions": [
     "storage",
     "activeTab",
@@ -12,6 +12,9 @@
   "host_permissions": [
     "https://suggestqueries.google.com/*",
     "https://inputtools.google.com/*",
+    "https://clients5.google.com/*",
+    "https://translate.googleapis.com/*",
+    "https://api.mymemory.translated.net/*",
     "https://raw.githubusercontent.com/*"
   ],
   "icons": {
@@ -24,7 +27,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Suggest",
+    "default_title": "TypeNext",
     "default_icon": {
       "16": "logo.png",
       "48": "logo.png",

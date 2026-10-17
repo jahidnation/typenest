@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const toggleEnabled = document.getElementById("toggleEnabled");
+  const toggleBanglaPhonetic = document.getElementById("toggleBanglaPhonetic");
+  const toggleFloatingBtn = document.getElementById("toggleFloatingBtn");
   const toggleSiteEnabled = document.getElementById("toggleSiteEnabled");
   const currentDomain = document.getElementById("currentDomain");
   const statusDot = document.getElementById("statusDot");
@@ -72,6 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const getSettings = (callback) => {
     const defaults = {
       sat_enabled: true,
+      sat_bangla_phonetic: false,
+      sat_floating_magic_btn: true,
       sat_disabled_domains: [],
       sat_snippets: [],
       sat_custom_dict: [],
@@ -83,6 +87,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       callback({
         sat_enabled: localStorage.getItem("sat_enabled") !== "false",
+        sat_bangla_phonetic: localStorage.getItem("sat_bangla_phonetic") === "true",
+        sat_floating_magic_btn: localStorage.getItem("sat_floating_magic_btn") !== "false",
         sat_disabled_domains: JSON.parse(localStorage.getItem("sat_disabled_domains") || "[]"),
         sat_snippets: JSON.parse(localStorage.getItem("sat_snippets") || "[]"),
         sat_custom_dict: JSON.parse(localStorage.getItem("sat_custom_dict") || "[]"),
@@ -496,6 +502,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  toggleBanglaPhonetic.addEventListener("change", () => {
+    const isChecked = toggleBanglaPhonetic.checked;
+    saveSettings({ sat_bangla_phonetic: isChecked }, () => {
+      showToast(isChecked ? "Bangla Phonetic enabled" : "Bangla Phonetic disabled");
+    });
+  });
+
+  toggleFloatingBtn.addEventListener("change", () => {
+    const isChecked = toggleFloatingBtn.checked;
+    saveSettings({ sat_floating_magic_btn: isChecked }, () => {
+      showToast(isChecked ? "Magic button enabled" : "Magic button hidden");
+    });
+  });
+
   toggleSiteEnabled.addEventListener("change", () => {
     if (!currentHost) return;
     const isSiteEnabled = toggleSiteEnabled.checked;
@@ -521,6 +541,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const exportObject = {
         version: "2.1",
         date: new Date().toISOString(),
+        bangla_phonetic: data.sat_bangla_phonetic || false,
+        floating_magic_btn: data.sat_floating_magic_btn !== false,
         disabled_domains: data.sat_disabled_domains || [],
         snippets: data.sat_snippets || [],
         custom: data.sat_custom_dict || [],
@@ -531,7 +553,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "suggest_backup.json";
+      a.download = "typenext_backup.json";
       document.body.appendChild(a);
       a.click();
       setTimeout(() => {
@@ -561,6 +583,8 @@ document.addEventListener("DOMContentLoaded", () => {
           const importedCustom = Array.isArray(imported.custom) ? imported.custom : (Array.isArray(imported) ? imported : []);
           const importedLearned = imported.learned && typeof imported.learned === "object" ? imported.learned : {};
           const importedDomains = Array.isArray(imported.disabled_domains) ? imported.disabled_domains : [];
+          const importedPhonetic = typeof imported.bangla_phonetic === "boolean" ? imported.bangla_phonetic : current.sat_bangla_phonetic;
+          const importedFloating = typeof imported.floating_magic_btn === "boolean" ? imported.floating_magic_btn : current.sat_floating_magic_btn;
 
           const snippetMap = new Map();
           (current.sat_snippets || []).forEach((s) => snippetMap.set(s.trigger.toLowerCase(), s));
@@ -571,11 +595,15 @@ document.addEventListener("DOMContentLoaded", () => {
           const combinedDomains = Array.from(new Set([...(current.sat_disabled_domains || []), ...importedDomains]));
 
           saveSettings({
+            sat_bangla_phonetic: importedPhonetic,
+            sat_floating_magic_btn: importedFloating,
             sat_disabled_domains: combinedDomains,
             sat_snippets: Array.from(snippetMap.values()),
             sat_custom_dict: combinedCustom,
             sat_learned_dict: combinedLearned
           }, () => {
+            toggleBanglaPhonetic.checked = importedPhonetic;
+            toggleFloatingBtn.checked = importedFloating;
             renderCurrentList();
             showToast("Backup imported successfully ✓");
           });
@@ -625,6 +653,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const initData = () => {
     getSettings((data) => {
       updateStatusUI(data.sat_enabled);
+      toggleBanglaPhonetic.checked = !!data.sat_bangla_phonetic;
+      toggleFloatingBtn.checked = data.sat_floating_magic_btn !== false;
       if (currentHost) {
         const disabledList = Array.isArray(data.sat_disabled_domains) ? data.sat_disabled_domains : [];
         const isDomainDisabled = disabledList.some((d) => d.toLowerCase() === currentHost.toLowerCase());

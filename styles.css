@@ -207,6 +207,47 @@
   color: #fca5a5 !important;
 }
 
+.sat-magic-btn {
+  position: fixed;
+  z-index: 2147483647;
+  display: none;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  color: #ffffff;
+  font-size: 11px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+  user-select: none;
+  outline: none;
+  padding: 0;
+}
+
+.sat-magic-btn:hover {
+  transform: scale(1.14);
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.5);
+}
+
+.sat-magic-btn:active {
+  transform: scale(0.92);
+}
+
+.sat-magic-btn.sat-translating i {
+  animation: satSpin 0.75s linear infinite;
+}
+
+@keyframes satSpin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .sat-toast {
   position: fixed;
   bottom: 24px;

@@ -1,7 +1,8 @@
 const memoryCache = new Map();
 const inFlightRequests = new Map();
+const translationCache = new Map();
 
-const fetchWithTimeout = async (url, ms = 2000) => {
+const fetchWithTimeout = async (url, ms = 2500) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
@@ -66,7 +67,7 @@ const queryGoogleServices = async (query) => {
 
   const promise = (async () => {
     const firefoxUrl = `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(clean)}`;
-    const phoneticUrl = `https://inputtools.google.com/request?text=${encodeURIComponent(clean)}&itc=bn-t-i0-und&num=3`;
+    const phoneticUrl = `https://inputtools.google.com/request?text=${encodeURIComponent(clean)}&itc=bn-t-i0-und&num=5`;
 
     const [suggestRes, phoneticRes] = await Promise.allSettled([
       fetchWithTimeout(firefoxUrl),
@@ -87,7 +88,7 @@ const queryGoogleServices = async (query) => {
 
     const pData = phoneticRes.status === "fulfilled" ? phoneticRes.value : null;
     if (pData && pData[0] === "SUCCESS" && pData[1]?.[0]?.[1]) {
-      pData[1][0][1].slice(0, 3).forEach((bnWord) => {
+      pData[1][0][1].slice(0, 5).forEach((bnWord) => {
         const str = String(bnWord).trim();
         if (str && !suggestions.some((s) => s.text === str)) {
           suggestions.push({ text: str, type: "phonetic" });
@@ -109,6 +110,66 @@ const queryGoogleServices = async (query) => {
   return promise;
 };
 
+const executeTranslation = async (text, customFrom, customTo) => {
+  const clean = (text || "").trim();
+  if (!clean) return { translatedText: "", fromLang: "", toLang: "" };
+
+  const hasBangla = /[\u0980-\u09FF]/.test(clean);
+  const fromLang = customFrom || (hasBangla ? "bn" : "en");
+  const toLang = customTo || (hasBangla ? "en" : "bn");
+  const cacheKey = `${fromLang}_${toLang}_${clean.toLowerCase()}`;
+
+  if (translationCache.has(cacheKey)) {
+    return { translatedText: translationCache.get(cacheKey), fromLang, toLang };
+  }
+
+  const u1 = `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${fromLang}&tl=${toLang}&q=${encodeURIComponent(clean)}`;
+  const d1 = await fetchWithTimeout(u1, 2500);
+  if (d1) {
+    let res = "";
+    if (d1.sentences && Array.isArray(d1.sentences)) {
+      res = d1.sentences.map((s) => s.trans || "").join(" ").trim();
+    } else if (Array.isArray(d1)) {
+      res = typeof d1[0] === "string" ? d1.join(" ") : d1[0].map((i) => i[0]).filter(Boolean).join(" ");
+    }
+    if (res && res !== clean) {
+      if (translationCache.size > 500) {
+        translationCache.delete(translationCache.keys().next().value);
+      }
+      translationCache.set(cacheKey, res);
+      return { translatedText: res, fromLang, toLang };
+    }
+  }
+
+  const u2 = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(clean)}`;
+  const d2 = await fetchWithTimeout(u2, 2500);
+  if (d2 && d2[0]) {
+    const res = d2[0].map((item) => item[0]).filter(Boolean).join("").trim();
+    if (res && res !== clean) {
+      if (translationCache.size > 500) {
+        translationCache.delete(translationCache.keys().next().value);
+      }
+      translationCache.set(cacheKey, res);
+      return { translatedText: res, fromLang, toLang };
+    }
+  }
+
+  const u3 = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=${fromLang}|${toLang}`;
+  const d3 = await fetchWithTimeout(u3, 2500);
+  if (d3?.responseData?.translatedText) {
+    const res = d3.responseData.translatedText.trim();
+    if (res && !res.toLowerCase().includes("mymemory")) {
+      if (translationCache.size > 500) {
+        translationCache.delete(translationCache.keys().next().value);
+      }
+      translationCache.set(cacheKey, res);
+      return { translatedText: res, fromLang, toLang };
+    }
+  }
+
+  return { translatedText: clean, fromLang, toLang };
+};
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create("periodicUpdateCheck", { periodInMinutes: 360 });
   checkForUpdates();
@@ -127,7 +188,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "fetchGoogleSuggestions") {
     const query = (request.query || "").trim();
-    if (!query || query.length < 2) {
+    if (!query || query.length < 1) {
       sendResponse({ suggestions: [] });
       return true;
     }
@@ -135,6 +196,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     queryGoogleServices(query)
       .then((suggestions) => sendResponse({ suggestions }))
       .catch(() => sendResponse({ suggestions: [] }));
+
+    return true;
+  }
+
+  if (request.action === "translateText") {
+    executeTranslation(request.text, request.fromLang, request.toLang)
+      .then((result) => sendResponse(result))
+      .catch(() => sendResponse({ translatedText: request.text || "", fromLang: "auto", toLang: "auto" }));
 
     return true;
   }

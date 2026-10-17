@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Suggest</title>
+  <title>TypeNext</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root {
@@ -644,8 +644,8 @@
 <body>
   <div class="header">
     <div class="brand">
-      <img src="logo.png" alt="Suggest" class="brand-logo">
-      <span>Suggest</span>
+      <img src="logo.png" alt="TypeNext" class="brand-logo">
+      <span>TypeNext</span>
     </div>
     <div class="status-badge">
       <span class="status-dot" id="statusDot"></span>
@@ -677,6 +677,28 @@
       </div>
       <label class="switch">
         <input type="checkbox" id="toggleEnabled" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="card">
+      <div class="card-info">
+        <i class="fa-solid fa-language"></i>
+        <span>Bangla Phonetic Mode</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="toggleBanglaPhonetic">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="card">
+      <div class="card-info">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>Floating Magic Button</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="toggleFloatingBtn" checked>
         <span class="slider"></span>
       </label>
     </div>
@@ -758,8 +780,8 @@
   <div class="dict-list" id="dictList"></div>
 
   <div class="footer-hint">
-    <span>Select: <kbd>1-9</kbd> or <kbd>Tab</kbd></span>
-    <span>Safe: <i class="fa-solid fa-shield-halved" style="color:#10b981;"></i> No Passwords</span>
+    <span>Translate: <kbd>Alt</kbd>+<kbd>T</kbd></span>
+    <span>Select: <kbd>1-9</kbd>/<kbd>Tab</kbd></span>
   </div>
 
   <div class="modal-backdrop" id="confirmModal">
