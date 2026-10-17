@@ -4,11 +4,15 @@
   "version": "1.0.0",
   "description": "Smart real-time word and sentence auto-complete dictionary with Google spellcheck.",
   "permissions": [
-    "storage"
+    "storage",
+    "activeTab",
+    "tabs",
+    "alarms"
   ],
   "host_permissions": [
     "https://suggestqueries.google.com/*",
-    "https://inputtools.google.com/*"
+    "https://inputtools.google.com/*",
+    "https://raw.githubusercontent.com/*"
   ],
   "icons": {
     "16": "logo.png",

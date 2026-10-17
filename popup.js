@@ -1,7 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
   const toggleEnabled = document.getElementById("toggleEnabled");
+  const toggleSiteEnabled = document.getElementById("toggleSiteEnabled");
+  const currentDomain = document.getElementById("currentDomain");
   const statusDot = document.getElementById("statusDot");
   const statusText = document.getElementById("statusText");
+  const updateBanner = document.getElementById("updateBanner");
+  const updateVersion = document.getElementById("updateVersion");
+  const btnUpdate = document.getElementById("btnUpdate");
+  const btnDismissUpdate = document.getElementById("btnDismissUpdate");
   const btnExport = document.getElementById("btnExport");
   const btnImport = document.getElementById("btnImport");
   const importFileInput = document.getElementById("importFileInput");
@@ -27,11 +33,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalDesc = document.getElementById("modalDesc");
   const btnModalCancel = document.getElementById("btnModalCancel");
   const btnModalConfirm = document.getElementById("btnModalConfirm");
+  const editModal = document.getElementById("editModal");
+  const editTriggerGroup = document.getElementById("editTriggerGroup");
+  const editTriggerInput = document.getElementById("editTriggerInput");
+  const editTextInput = document.getElementById("editTextInput");
+  const btnEditCancel = document.getElementById("btnEditCancel");
+  const btnEditSave = document.getElementById("btnEditSave");
   const popupToast = document.getElementById("popupToast");
   const popupToastText = document.getElementById("popupToastText");
 
   let currentTab = "shortcuts";
   let toastTimer = null;
+  let currentHost = "";
+  let editingContext = null;
+
   const storage = typeof chrome !== "undefined" && chrome.storage ? (chrome.storage.sync || chrome.storage.local) : null;
 
   const showToast = (message) => {
@@ -57,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const getSettings = (callback) => {
     const defaults = {
       sat_enabled: true,
+      sat_disabled_domains: [],
       sat_snippets: [],
       sat_custom_dict: [],
       sat_learned_dict: {}
@@ -67,6 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       callback({
         sat_enabled: localStorage.getItem("sat_enabled") !== "false",
+        sat_disabled_domains: JSON.parse(localStorage.getItem("sat_disabled_domains") || "[]"),
         sat_snippets: JSON.parse(localStorage.getItem("sat_snippets") || "[]"),
         sat_custom_dict: JSON.parse(localStorage.getItem("sat_custom_dict") || "[]"),
         sat_learned_dict: JSON.parse(localStorage.getItem("sat_learned_dict") || "{}")
@@ -123,10 +140,25 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="snippet-tag"><i class="fa-solid fa-bolt"></i>${item.trigger}</span>
             <i class="fa-solid fa-arrow-right snippet-arrow"></i>
             <span class="dict-text" title="${item.text}">${item.text}</span>
-            <button type="button" class="dict-del" title="Delete hotkey">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
+            <div class="dict-actions">
+              <button type="button" class="dict-btn dict-edit" title="Edit hotkey">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button type="button" class="dict-btn dict-del" title="Delete hotkey">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
           `;
+
+          row.querySelector(".dict-edit").addEventListener("click", (e) => {
+            e.stopPropagation();
+            editingContext = { type: "shortcut", original: item };
+            editTriggerGroup.style.display = "block";
+            editTriggerInput.value = item.trigger;
+            editTextInput.value = item.text;
+            editModal.classList.add("show");
+            editTextInput.focus();
+          });
 
           row.querySelector(".dict-del").addEventListener("click", (e) => {
             e.stopPropagation();
@@ -157,10 +189,24 @@ document.addEventListener("DOMContentLoaded", () => {
           row.className = "dict-item";
           row.innerHTML = `
             <span class="dict-text" title="${item}">${item}</span>
-            <button type="button" class="dict-del" title="Delete phrase">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
+            <div class="dict-actions">
+              <button type="button" class="dict-btn dict-edit" title="Edit phrase">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button type="button" class="dict-btn dict-del" title="Delete phrase">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
           `;
+
+          row.querySelector(".dict-edit").addEventListener("click", (e) => {
+            e.stopPropagation();
+            editingContext = { type: "custom", original: item };
+            editTriggerGroup.style.display = "none";
+            editTextInput.value = item;
+            editModal.classList.add("show");
+            editTextInput.focus();
+          });
 
           row.querySelector(".dict-del").addEventListener("click", (e) => {
             e.stopPropagation();
@@ -191,9 +237,11 @@ document.addEventListener("DOMContentLoaded", () => {
           row.className = "dict-item";
           row.innerHTML = `
             <span class="dict-text" title="${word}">${word}</span>
-            <button type="button" class="dict-del" title="Delete word">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
+            <div class="dict-actions">
+              <button type="button" class="dict-btn dict-del" title="Delete word">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
           `;
 
           row.querySelector(".dict-del").addEventListener("click", (e) => {
@@ -339,6 +387,72 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  btnEditCancel.addEventListener("click", () => {
+    editModal.classList.remove("show");
+    editingContext = null;
+  });
+
+  editModal.addEventListener("click", (e) => {
+    if (e.target === editModal) {
+      editModal.classList.remove("show");
+      editingContext = null;
+    }
+  });
+
+  btnEditSave.addEventListener("click", () => {
+    if (!editingContext) return;
+    const newText = editTextInput.value.trim();
+    if (!newText) {
+      editTextInput.focus();
+      return;
+    }
+
+    if (editingContext.type === "shortcut") {
+      let newTrigger = editTriggerInput.value.trim();
+      if (!newTrigger) {
+        editTriggerInput.focus();
+        return;
+      }
+      if (!newTrigger.startsWith("/") && !newTrigger.startsWith(";") && !newTrigger.startsWith(":")) {
+        newTrigger = "/" + newTrigger;
+      }
+
+      getSettings((data) => {
+        const list = Array.isArray(data.sat_snippets) ? [...data.sat_snippets] : [];
+        const idx = list.findIndex((s) => s.trigger.toLowerCase() === editingContext.original.trigger.toLowerCase());
+        if (idx !== -1) {
+          list[idx] = { trigger: newTrigger, text: newText };
+        } else {
+          list.unshift({ trigger: newTrigger, text: newText });
+        }
+
+        saveSettings({ sat_snippets: list }, () => {
+          editModal.classList.remove("show");
+          editingContext = null;
+          renderCurrentList();
+          showToast("Hotkey updated ✓");
+        });
+      });
+    } else if (editingContext.type === "custom") {
+      getSettings((data) => {
+        const list = Array.isArray(data.sat_custom_dict) ? [...data.sat_custom_dict] : [];
+        const idx = list.indexOf(editingContext.original);
+        if (idx !== -1) {
+          list[idx] = newText;
+        } else {
+          list.unshift(newText);
+        }
+
+        saveSettings({ sat_custom_dict: list }, () => {
+          editModal.classList.remove("show");
+          editingContext = null;
+          renderCurrentList();
+          showToast("Phrase updated ✓");
+        });
+      });
+    }
+  });
+
   searchFilterInput.addEventListener("input", renderCurrentList);
 
   btnClearSearch.addEventListener("click", () => {
@@ -382,11 +496,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  toggleSiteEnabled.addEventListener("change", () => {
+    if (!currentHost) return;
+    const isSiteEnabled = toggleSiteEnabled.checked;
+
+    getSettings((data) => {
+      let disabledDomains = Array.isArray(data.sat_disabled_domains) ? [...data.sat_disabled_domains] : [];
+      if (isSiteEnabled) {
+        disabledDomains = disabledDomains.filter((d) => d.toLowerCase() !== currentHost.toLowerCase());
+      } else {
+        if (!disabledDomains.some((d) => d.toLowerCase() === currentHost.toLowerCase())) {
+          disabledDomains.push(currentHost.toLowerCase());
+        }
+      }
+
+      saveSettings({ sat_disabled_domains: disabledDomains }, () => {
+        showToast(isSiteEnabled ? `Enabled on ${currentHost}` : `Disabled on ${currentHost}`);
+      });
+    });
+  });
+
   btnExport.addEventListener("click", () => {
     getSettings((data) => {
       const exportObject = {
-        version: "2.0",
+        version: "2.1",
         date: new Date().toISOString(),
+        disabled_domains: data.sat_disabled_domains || [],
         snippets: data.sat_snippets || [],
         custom: data.sat_custom_dict || [],
         learned: data.sat_learned_dict || {}
@@ -396,7 +531,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "smart_autotype_backup.json";
+      a.download = "suggest_backup.json";
       document.body.appendChild(a);
       a.click();
       setTimeout(() => {
@@ -425,6 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const importedSnippets = Array.isArray(imported.snippets) ? imported.snippets : [];
           const importedCustom = Array.isArray(imported.custom) ? imported.custom : (Array.isArray(imported) ? imported : []);
           const importedLearned = imported.learned && typeof imported.learned === "object" ? imported.learned : {};
+          const importedDomains = Array.isArray(imported.disabled_domains) ? imported.disabled_domains : [];
 
           const snippetMap = new Map();
           (current.sat_snippets || []).forEach((s) => snippetMap.set(s.trigger.toLowerCase(), s));
@@ -432,8 +568,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
           const combinedCustom = Array.from(new Set([...(current.sat_custom_dict || []), ...importedCustom]));
           const combinedLearned = { ...(current.sat_learned_dict || {}), ...importedLearned };
+          const combinedDomains = Array.from(new Set([...(current.sat_disabled_domains || []), ...importedDomains]));
 
           saveSettings({
+            sat_disabled_domains: combinedDomains,
             sat_snippets: Array.from(snippetMap.values()),
             sat_custom_dict: combinedCustom,
             sat_learned_dict: combinedLearned
@@ -449,8 +587,75 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsText(file);
   });
 
-  getSettings((data) => {
-    updateStatusUI(data.sat_enabled);
-    renderCurrentList();
+  btnUpdate.addEventListener("click", () => {
+    if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.create) {
+      chrome.tabs.create({ url: "https://github.com/jahidnation/suggest" });
+    } else {
+      window.open("https://github.com/jahidnation/suggest", "_blank");
+    }
   });
+
+  btnDismissUpdate.addEventListener("click", () => {
+    updateBanner.classList.add("hidden");
+  });
+
+  const checkUpdateStatus = () => {
+    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get("sat_update_info", (res) => {
+        const info = res?.sat_update_info;
+        if (info && info.hasUpdate) {
+          updateVersion.textContent = info.latestVersion;
+          updateBanner.classList.remove("hidden");
+        }
+      });
+      if (chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: "checkUpdateManual" }, () => {
+          chrome.storage.local.get("sat_update_info", (res) => {
+            const info = res?.sat_update_info;
+            if (info && info.hasUpdate) {
+              updateVersion.textContent = info.latestVersion;
+              updateBanner.classList.remove("hidden");
+            }
+          });
+        });
+      }
+    }
+  };
+
+  const initData = () => {
+    getSettings((data) => {
+      updateStatusUI(data.sat_enabled);
+      if (currentHost) {
+        const disabledList = Array.isArray(data.sat_disabled_domains) ? data.sat_disabled_domains : [];
+        const isDomainDisabled = disabledList.some((d) => d.toLowerCase() === currentHost.toLowerCase());
+        toggleSiteEnabled.checked = !isDomainDisabled;
+      }
+      renderCurrentList();
+      checkUpdateStatus();
+    });
+  };
+
+  if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.query) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs?.[0]?.url) {
+        try {
+          const url = new URL(tabs[0].url);
+          if (url.protocol.startsWith("http")) {
+            currentHost = url.hostname;
+            currentDomain.textContent = currentHost;
+          } else {
+            currentDomain.textContent = "Internal page";
+            toggleSiteEnabled.disabled = true;
+          }
+        } catch {
+          currentDomain.textContent = "Current tab";
+          toggleSiteEnabled.disabled = true;
+        }
+      }
+      initData();
+    });
+  } else {
+    currentDomain.textContent = "localhost";
+    initData();
+  }
 });

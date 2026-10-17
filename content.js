@@ -1,5 +1,6 @@
 (() => {
   let isEnabled = true;
+  let disabledDomains = [];
   let snippets = [];
   let customDict = [];
   let learnedDict = {};
@@ -13,6 +14,11 @@
 
   const storage = typeof chrome !== "undefined" && chrome.storage ? (chrome.storage.sync || chrome.storage.local) : null;
 
+  const isCurrentSiteDisabled = () => {
+    const host = window.location.hostname.toLowerCase();
+    return disabledDomains.some((d) => d && (host === d.toLowerCase() || host.endsWith("." + d.toLowerCase())));
+  };
+
   const isPasswordField = (el) => {
     if (!el) return true;
     if (el.tagName === "INPUT" && el.type === "password") return true;
@@ -21,21 +27,43 @@
     const name = (el.name || "").toLowerCase();
     const id = (el.id || "").toLowerCase();
     const label = (el.getAttribute("aria-label") || "").toLowerCase();
-    if (name.includes("password") || name.includes("passwd") || id.includes("password") || id.includes("passwd") || label.includes("password")) {
-      return true;
+    return name.includes("password") || name.includes("passwd") || id.includes("password") || id.includes("passwd") || label.includes("password");
+  };
+
+  const detectTheme = (target) => {
+    let isLight = false;
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+      isLight = true;
     }
-    return false;
+    try {
+      const checkEl = target || document.body || document.documentElement;
+      const bg = window.getComputedStyle(checkEl).backgroundColor;
+      const rgb = bg.match(/\d+/g);
+      if (rgb && rgb.length >= 3) {
+        const r = parseInt(rgb[0], 10);
+        const g = parseInt(rgb[1], 10);
+        const b = parseInt(rgb[2], 10);
+        const a = rgb[3] !== undefined ? parseFloat(rgb[3]) : 1;
+        if (a > 0.15) {
+          const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+          isLight = brightness > 145;
+        }
+      }
+    } catch {}
+    return isLight ? "sat-theme-light" : "sat-theme-dark";
   };
 
   const loadData = () => {
     if (!storage) return;
     storage.get({
       sat_enabled: true,
+      sat_disabled_domains: [],
       sat_snippets: [],
       sat_custom_dict: [],
       sat_learned_dict: {}
     }, (items) => {
       isEnabled = items.sat_enabled !== false;
+      disabledDomains = Array.isArray(items.sat_disabled_domains) ? items.sat_disabled_domains : [];
       snippets = Array.isArray(items.sat_snippets) ? items.sat_snippets : [];
       customDict = Array.isArray(items.sat_custom_dict) ? items.sat_custom_dict : [];
       learnedDict = items.sat_learned_dict || {};
@@ -116,10 +144,12 @@
     return null;
   };
 
-  const calculateCaretCoords = (target) => {
+  const updateSuggestionPosition = (target) => {
+    if (!suggestionBox || !target) return;
     const rect = target.getBoundingClientRect();
     let x = rect.left;
-    let y = rect.bottom + 4;
+    let targetTop = rect.top;
+    let targetBottom = rect.bottom;
 
     if (target.isContentEditable) {
       const sel = window.getSelection();
@@ -129,22 +159,34 @@
         if (clientRects.length > 0) {
           const cRect = clientRects[0];
           x = cRect.left;
-          y = cRect.bottom + 4;
+          targetTop = cRect.top;
+          targetBottom = cRect.bottom;
         }
       }
     }
 
-    const maxLeft = window.innerWidth - 270;
+    const boxHeight = suggestionBox.offsetHeight || 38;
+    const boxWidth = suggestionBox.offsetWidth || 280;
     const scrollX = window.scrollX || window.pageXOffset;
     const scrollY = window.scrollY || window.pageYOffset;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
 
-    return {
-      left: Math.max(8, Math.min(x + scrollX, maxLeft + scrollX)),
-      top: y + scrollY
-    };
+    let topPos = targetBottom + 6 + scrollY;
+    if (targetBottom + boxHeight + 10 > viewportHeight && targetTop - boxHeight - 6 >= 0) {
+      topPos = targetTop - boxHeight - 6 + scrollY;
+    }
+
+    const maxLeft = viewportWidth - boxWidth - 12;
+    const leftPos = Math.max(8, Math.min(x + scrollX, maxLeft + scrollX));
+
+    suggestionBox.style.left = `${leftPos}px`;
+    suggestionBox.style.top = `${topPos}px`;
   };
 
   const hideSuggestions = () => {
+    clearTimeout(debounceTimer);
+    ++currentReqId;
     if (!suggestionBox) return;
     suggestionBox.classList.remove("sat-visible");
     suggestionBox.innerHTML = "";
@@ -185,7 +227,7 @@
     }
 
     if (deleted) {
-      showToast(`Deleted from memory ✓`);
+      showToast("Deleted from memory ✓");
     }
   };
 
@@ -195,9 +237,8 @@
       return;
     }
 
-    const coords = calculateCaretCoords(target);
-    suggestionBox.style.left = `${coords.left}px`;
-    suggestionBox.style.top = `${coords.top}px`;
+    const themeClass = detectTheme(target);
+    suggestionBox.className = `sat-suggestion-box ${themeClass}`;
     suggestionBox.innerHTML = "";
 
     activeMatches.forEach((item, index) => {
@@ -210,7 +251,7 @@
           <div style="display:flex;align-items:center;gap:6px;overflow:hidden;flex:1;">
             <i class="fa-solid fa-bolt" style="color:#eab308;font-size:11px;"></i>
             <span style="color:#60a5fa;font-weight:700;">${item.trigger}</span>
-            <i class="fa-solid fa-arrow-right" style="font-size:9px;color:#6b7280;"></i>
+            <i class="fa-solid fa-arrow-right" style="font-size:9px;opacity:0.6;"></i>
             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;">${item.text}</span>
           </div>
         `;
@@ -231,11 +272,11 @@
 
       row.innerHTML = `
         ${contentHtml}
-        <div style="display:flex;align-items:center;gap:5px;">
-          <button type="button" class="sat-del-btn" title="Delete from memory" style="border:none;background:transparent;color:#9ca3af;cursor:pointer;padding:2px 4px;font-size:11px;border-radius:4px;">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button type="button" class="sat-del-btn" title="Delete from memory">
             <i class="fa-solid fa-xmark"></i>
           </button>
-          <span class="sat-key-hint">Tab</span>
+          <span class="sat-key-hint">${index + 1}</span>
         </div>
       `;
 
@@ -255,6 +296,7 @@
     });
 
     suggestionBox.classList.add("sat-visible");
+    updateSuggestionPosition(target);
   };
 
   const getMatchedSnippets = (queryWord) => {
@@ -326,7 +368,11 @@
   };
 
   const handleTyping = (e) => {
-    if (!isEnabled) return;
+    if (!isEnabled || isCurrentSiteDisabled()) {
+      hideSuggestions();
+      return;
+    }
+
     const target = e.target;
     if (!target || isPasswordField(target)) {
       hideSuggestions();
@@ -365,15 +411,35 @@
               if (chrome.runtime.lastError || !response || !response.suggestions) return;
               if (thisReqId !== currentReqId || currentTarget !== target) return;
 
+              const freshInfo = getTargetInfo(target);
+              if (!freshInfo || !freshInfo.queryWord || freshInfo.queryWord.length < 2) {
+                hideSuggestions();
+                return;
+              }
+
               const merged = [...matchedSnippets, ...localResults];
+              const extGoogle = [];
+              let extPhonetic = null;
+
               response.suggestions.forEach((ext) => {
-                if (!merged.some((m) => m.text.toLowerCase() === ext.text.toLowerCase())) {
-                  merged.push(ext);
+                if (ext.type === "phonetic") {
+                  if (!extPhonetic) extPhonetic = ext;
+                } else {
+                  if (!merged.some((m) => m.text.toLowerCase() === ext.text.toLowerCase()) && !extGoogle.some((m) => m.text.toLowerCase() === ext.text.toLowerCase())) {
+                    extGoogle.push(ext);
+                  }
                 }
               });
 
-              if (merged.length > 0) {
-                activeMatches = merged.slice(0, 5);
+              const primaryList = [...merged, ...extGoogle];
+              const maxSlots = 6;
+              if (extPhonetic) {
+                activeMatches = [...primaryList.slice(0, maxSlots - 1), extPhonetic];
+              } else {
+                activeMatches = primaryList.slice(0, maxSlots);
+              }
+
+              if (activeMatches.length > 0) {
                 selectedIndex = 0;
                 renderSuggestions(target);
               }
@@ -385,7 +451,16 @@
   };
 
   const handleKeydown = (e) => {
-    if (!isEnabled || isPasswordField(e.target)) return;
+    if (!isEnabled || isCurrentSiteDisabled() || isPasswordField(e.target)) return;
+
+    if (e.key === "Backspace" || e.key === "Delete") {
+      setTimeout(() => {
+        const info = getTargetInfo(e.target);
+        if (!info || !info.queryWord || info.queryWord.length < 2) {
+          hideSuggestions();
+        }
+      }, 10);
+    }
 
     if (e.key === " " || e.key === "Tab") {
       const info = getTargetInfo(e.target);
@@ -404,6 +479,12 @@
 
     if (!activeMatches.length) return;
 
+    if (e.key >= "1" && e.key <= String(Math.min(activeMatches.length, 9)) && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      applySuggestion(activeMatches[parseInt(e.key, 10) - 1]);
+      return;
+    }
+
     if (e.key === "Delete" && e.shiftKey) {
       e.preventDefault();
       const current = activeMatches[selectedIndex];
@@ -411,20 +492,20 @@
       return;
     }
 
-    if (e.key === "Tab" || (e.key === "ArrowRight" && !e.ctrlKey && !e.metaKey)) {
+    if (e.key === "Tab") {
       e.preventDefault();
       applySuggestion(activeMatches[selectedIndex]);
       return;
     }
 
-    if (e.key === "ArrowDown") {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
       selectedIndex = (selectedIndex + 1) % activeMatches.length;
       renderSuggestions(currentTarget);
       return;
     }
 
-    if (e.key === "ArrowUp") {
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
       selectedIndex = (selectedIndex - 1 + activeMatches.length) % activeMatches.length;
       renderSuggestions(currentTarget);
@@ -437,6 +518,7 @@
   };
 
   const handleAutoLearn = (e) => {
+    if (!isEnabled || isCurrentSiteDisabled()) return;
     if (e.key !== " " && e.key !== "Enter") return;
     const target = e.target;
     if (isPasswordField(target)) return;
@@ -475,6 +557,10 @@
   if (storage && chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener((changes) => {
       if (changes.sat_enabled) isEnabled = changes.sat_enabled.newValue !== false;
+      if (changes.sat_disabled_domains) {
+        disabledDomains = Array.isArray(changes.sat_disabled_domains.newValue) ? changes.sat_disabled_domains.newValue : [];
+        if (isCurrentSiteDisabled()) hideSuggestions();
+      }
       if (changes.sat_snippets) snippets = changes.sat_snippets.newValue || [];
       if (changes.sat_custom_dict) customDict = changes.sat_custom_dict.newValue || [];
       if (changes.sat_learned_dict) learnedDict = changes.sat_learned_dict.newValue || {};

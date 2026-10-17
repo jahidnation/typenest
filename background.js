@@ -1,17 +1,57 @@
 const memoryCache = new Map();
 const inFlightRequests = new Map();
 
-const fetchWithTimeout = async (url, ms = 1500) => {
+const fetchWithTimeout = async (url, ms = 2000) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
-    return res.ok ? await res.json() : null;
+    if (!res.ok) return null;
+    const text = await res.text();
+    return JSON.parse(text);
   } catch {
     clearTimeout(timer);
     return null;
   }
+};
+
+const isNewerVersion = (remote, current) => {
+  const r = remote.split(".").map(Number);
+  const c = current.split(".").map(Number);
+  for (let i = 0; i < Math.max(r.length, c.length); i++) {
+    const rv = r[i] || 0;
+    const cv = c[i] || 0;
+    if (rv > cv) return true;
+    if (rv < cv) return false;
+  }
+  return false;
+};
+
+const checkForUpdates = async () => {
+  const manifestUrl = "https://raw.githubusercontent.com/jahidnation/suggest/main/manifest.json";
+  const remoteData = await fetchWithTimeout(manifestUrl, 3000);
+  if (!remoteData || !remoteData.version) return;
+
+  const currentVersion = chrome.runtime.getManifest().version;
+  const hasUpdate = isNewerVersion(remoteData.version, currentVersion);
+
+  if (hasUpdate) {
+    chrome.action.setBadgeText({ text: "NEW" });
+    chrome.action.setBadgeBackgroundColor({ color: "#2563eb" });
+  } else {
+    chrome.action.setBadgeText({ text: "" });
+  }
+
+  chrome.storage.local.set({
+    sat_update_info: {
+      hasUpdate,
+      latestVersion: remoteData.version,
+      currentVersion,
+      checkedAt: Date.now(),
+      releaseUrl: "https://github.com/jahidnation/suggest"
+    }
+  });
 };
 
 const queryGoogleServices = async (query) => {
@@ -25,25 +65,19 @@ const queryGoogleServices = async (query) => {
   }
 
   const promise = (async () => {
-    const chromeUrl = `https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(clean)}`;
     const firefoxUrl = `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(clean)}`;
-    const phoneticUrl = `https://inputtools.google.com/request?text=${encodeURIComponent(clean)}&itc=bn-t-i0-und&num=2`;
+    const phoneticUrl = `https://inputtools.google.com/request?text=${encodeURIComponent(clean)}&itc=bn-t-i0-und&num=3`;
 
-    const [chromeRes, phoneticRes] = await Promise.allSettled([
-      fetchWithTimeout(chromeUrl),
+    const [suggestRes, phoneticRes] = await Promise.allSettled([
+      fetchWithTimeout(firefoxUrl),
       fetchWithTimeout(phoneticUrl)
     ]);
 
-    let suggestData = chromeRes.status === "fulfilled" ? chromeRes.value : null;
-
-    if (!suggestData) {
-      suggestData = await fetchWithTimeout(firefoxUrl);
-    }
-
     const suggestions = [];
 
+    const suggestData = suggestRes.status === "fulfilled" ? suggestRes.value : null;
     if (suggestData && Array.isArray(suggestData[1])) {
-      suggestData[1].slice(0, 4).forEach((word) => {
+      suggestData[1].slice(0, 7).forEach((word) => {
         const str = String(word).trim();
         if (str && !suggestions.some((s) => s.text.toLowerCase() === str.toLowerCase())) {
           suggestions.push({ text: str, type: "google" });
@@ -53,7 +87,7 @@ const queryGoogleServices = async (query) => {
 
     const pData = phoneticRes.status === "fulfilled" ? phoneticRes.value : null;
     if (pData && pData[0] === "SUCCESS" && pData[1]?.[0]?.[1]) {
-      pData[1][0][1].slice(0, 2).forEach((bnWord) => {
+      pData[1][0][1].slice(0, 3).forEach((bnWord) => {
         const str = String(bnWord).trim();
         if (str && !suggestions.some((s) => s.text === str)) {
           suggestions.push({ text: str, type: "phonetic" });
@@ -75,6 +109,21 @@ const queryGoogleServices = async (query) => {
   return promise;
 };
 
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.alarms.create("periodicUpdateCheck", { periodInMinutes: 360 });
+  checkForUpdates();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  checkForUpdates();
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "periodicUpdateCheck") {
+    checkForUpdates();
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "fetchGoogleSuggestions") {
     const query = (request.query || "").trim();
@@ -87,6 +136,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then((suggestions) => sendResponse({ suggestions }))
       .catch(() => sendResponse({ suggestions: [] }));
 
+    return true;
+  }
+
+  if (request.action === "checkUpdateManual") {
+    checkForUpdates().then(() => sendResponse({ success: true }));
     return true;
   }
 });
