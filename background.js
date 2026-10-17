@@ -30,7 +30,7 @@ const isNewerVersion = (remote, current) => {
 };
 
 const checkForUpdates = async () => {
-  const manifestUrl = "https://raw.githubusercontent.com/jahidnation/suggest/main/manifest.json";
+  const manifestUrl = "https://raw.githubusercontent.com/jahidnation/typenest/main/manifest.json";
   const remoteData = await fetchWithTimeout(manifestUrl, 3000);
   if (!remoteData || !remoteData.version) return;
 
@@ -50,7 +50,7 @@ const checkForUpdates = async () => {
       latestVersion: remoteData.version,
       currentVersion,
       checkedAt: Date.now(),
-      releaseUrl: "https://github.com/jahidnation/suggest"
+      releaseUrl: "https://github.com/jahidnation/typenest"
     }
   });
 };

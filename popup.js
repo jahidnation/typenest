@@ -617,9 +617,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnUpdate.addEventListener("click", () => {
     if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.create) {
-      chrome.tabs.create({ url: "https://github.com/jahidnation/suggest" });
+      chrome.tabs.create({ url: "https://github.com/jahidnation/typenest" });
     } else {
-      window.open("https://github.com/jahidnation/suggest", "_blank");
+      window.open("https://github.com/jahidnation/typenest", "_blank");
     }
   });
 
