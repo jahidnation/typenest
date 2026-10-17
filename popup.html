@@ -6,6 +6,52 @@
   <title>Suggest</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
+    :root {
+      --bg-body: #0f1115;
+      --text-main: #f3f4f6;
+      --text-sub: #9ca3af;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.07);
+      --input-bg: rgba(255, 255, 255, 0.04);
+      --input-border: rgba(255, 255, 255, 0.08);
+      --item-bg: rgba(255, 255, 255, 0.03);
+      --item-border: rgba(255, 255, 255, 0.06);
+      --item-hover: rgba(255, 255, 255, 0.06);
+      --modal-bg: #151821;
+      --modal-border: rgba(255, 255, 255, 0.12);
+      --btn-cancel-bg: #262935;
+      --btn-cancel-text: #ffffff;
+      --kbd-bg: #232630;
+      --kbd-border: rgba(255, 255, 255, 0.1);
+      --slider-bg: #272a34;
+      --tabs-bg: rgba(255, 255, 255, 0.03);
+      --badge-bg: rgba(255, 255, 255, 0.05);
+      --badge-border: rgba(255, 255, 255, 0.08);
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg-body: #f8fafc;
+        --text-main: #0f172a;
+        --text-sub: #64748b;
+        --card-bg: #ffffff;
+        --card-border: #e2e8f0;
+        --input-bg: #ffffff;
+        --input-border: #cbd5e1;
+        --item-bg: #ffffff;
+        --item-border: #e2e8f0;
+        --item-hover: #f1f5f9;
+        --modal-bg: #ffffff;
+        --modal-border: #e2e8f0;
+        --btn-cancel-bg: #f1f5f9;
+        --btn-cancel-text: #334155;
+        --kbd-bg: #f1f5f9;
+        --kbd-border: #cbd5e1;
+        --slider-bg: #cbd5e1;
+        --tabs-bg: #f1f5f9;
+        --badge-bg: rgba(0, 0, 0, 0.04);
+        --badge-border: rgba(0, 0, 0, 0.08);
+      }
+    }
     * {
       box-sizing: border-box;
       margin: 0;
@@ -15,10 +61,11 @@
     body {
       width: 360px;
       padding: 14px;
-      background: #0f1115;
-      color: #f3f4f6;
+      background: var(--bg-body);
+      color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
       overflow: hidden;
+      transition: background 0.2s ease, color 0.2s ease;
     }
     .header {
       display: flex;
@@ -32,7 +79,7 @@
       gap: 8px;
       font-size: 15px;
       font-weight: 700;
-      color: #ffffff;
+      color: var(--text-main);
       letter-spacing: -0.2px;
     }
     .brand-logo {
@@ -48,11 +95,11 @@
       gap: 6px;
       font-size: 11px;
       font-weight: 600;
-      color: #9ca3af;
-      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-sub);
+      background: var(--badge-bg);
       padding: 3px 9px;
       border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--badge-border);
     }
     .status-dot {
       width: 7px;
@@ -66,8 +113,8 @@
       box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
     }
     .update-banner {
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(59, 130, 246, 0.12));
-      border: 1px solid rgba(59, 130, 246, 0.35);
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(59, 130, 246, 0.08));
+      border: 1px solid rgba(59, 130, 246, 0.3);
       border-radius: 9px;
       padding: 8px 10px;
       margin-bottom: 10px;
@@ -85,10 +132,9 @@
       gap: 7px;
       font-size: 11.5px;
       font-weight: 600;
-      color: #bfdbfe;
+      color: #2563eb;
     }
     .update-info i {
-      color: #60a5fa;
       font-size: 13px;
     }
     .update-actions {
@@ -116,7 +162,7 @@
     .btn-dismiss-update {
       background: transparent;
       border: none;
-      color: #93c5fd;
+      color: var(--text-sub);
       cursor: pointer;
       font-size: 11px;
       padding: 2px 4px;
@@ -124,10 +170,6 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: color 0.15s ease;
-    }
-    .btn-dismiss-update:hover {
-      color: #ffffff;
     }
     .control-cards {
       display: flex;
@@ -136,13 +178,14 @@
       margin-bottom: 10px;
     }
     .card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       border-radius: 9px;
       padding: 8px 11px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
     .card-info {
       display: flex;
@@ -150,14 +193,14 @@
       gap: 8px;
       font-size: 12px;
       font-weight: 600;
-      color: #e5e7eb;
+      color: var(--text-main);
     }
     .card-info i {
       color: #3b82f6;
       font-size: 12px;
     }
     .domain-label {
-      color: #9ca3af;
+      color: var(--text-sub);
       font-size: 10.5px;
       font-weight: 500;
       max-width: 130px;
@@ -181,10 +224,10 @@
       position: absolute;
       cursor: pointer;
       inset: 0;
-      background-color: #272a34;
+      background-color: var(--slider-bg);
       border-radius: 20px;
       transition: 0.2s ease;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--input-border);
     }
     .slider:before {
       position: absolute;
@@ -196,6 +239,7 @@
       background-color: #ffffff;
       border-radius: 50%;
       transition: 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
     input:checked + .slider {
       background-color: #2563eb;
@@ -211,9 +255,9 @@
       margin-bottom: 10px;
     }
     .btn-action {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #d1d5db;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
       font-size: 11px;
       font-weight: 600;
       padding: 6px 8px;
@@ -226,9 +270,8 @@
       transition: all 0.15s ease;
     }
     .btn-action:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-      border-color: rgba(255, 255, 255, 0.18);
+      background: var(--item-hover);
+      border-color: var(--input-border);
     }
     .tabs-header {
       display: flex;
@@ -241,17 +284,17 @@
       flex: 1;
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--tabs-bg);
       border-radius: 8px;
       padding: 2px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--card-border);
       gap: 2px;
     }
     .tab-btn {
       padding: 5px 0;
       border: none;
       background: transparent;
-      color: #9ca3af;
+      color: var(--text-sub);
       font-size: 10.5px;
       font-weight: 600;
       border-radius: 6px;
@@ -268,7 +311,7 @@
       color: #ffffff;
     }
     .tab-count {
-      background: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.22);
       font-size: 9px;
       padding: 1px 4px;
       border-radius: 999px;
@@ -299,11 +342,11 @@
     }
     .search-input {
       width: 100%;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
       border-radius: 7px;
       padding: 6px 26px 6px 28px;
-      color: #ffffff;
+      color: var(--text-main);
       font-size: 11.5px;
       outline: none;
       transition: border-color 0.15s ease;
@@ -316,7 +359,7 @@
       left: 9px;
       top: 50%;
       transform: translateY(-50%);
-      color: #6b7280;
+      color: var(--text-sub);
       font-size: 11px;
       pointer-events: none;
     }
@@ -327,14 +370,14 @@
       transform: translateY(-50%);
       background: transparent;
       border: none;
-      color: #6b7280;
+      color: var(--text-sub);
       cursor: pointer;
       display: none;
       font-size: 10px;
       padding: 3px;
     }
     .btn-clear-search:hover {
-      color: #ffffff;
+      color: var(--text-main);
     }
     .input-group {
       display: flex;
@@ -345,11 +388,11 @@
       display: none;
     }
     .input-field {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
       border-radius: 7px;
       padding: 6px 9px;
-      color: #ffffff;
+      color: var(--text-main);
       font-size: 11.5px;
       outline: none;
       transition: border-color 0.15s ease;
@@ -394,7 +437,7 @@
       width: 4px;
     }
     .dict-list::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
+      background: var(--input-border);
       border-radius: 4px;
     }
     .dict-item {
@@ -402,21 +445,21 @@
       align-items: center;
       justify-content: space-between;
       gap: 6px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: var(--item-bg);
+      border: 1px solid var(--item-border);
       border-radius: 6px;
       padding: 5px 8px;
       font-size: 11.5px;
-      color: #d1d5db;
+      color: var(--text-main);
       transition: background 0.12s ease;
     }
     .dict-item:hover {
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--item-hover);
     }
     .snippet-tag {
-      background: rgba(59, 130, 246, 0.15);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      color: #60a5fa;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.28);
+      color: #2563eb;
       font-size: 10px;
       font-weight: 700;
       padding: 2px 5px;
@@ -427,7 +470,7 @@
       flex-shrink: 0;
     }
     .snippet-arrow {
-      color: #6b7280;
+      color: var(--text-sub);
       font-size: 9px;
       flex-shrink: 0;
     }
@@ -457,11 +500,11 @@
       transition: all 0.12s ease;
     }
     .dict-edit {
-      color: #9ca3af;
+      color: var(--text-sub);
     }
     .dict-edit:hover {
-      background: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
+      background: rgba(59, 130, 246, 0.12);
+      color: #2563eb;
     }
     .dict-del {
       color: #ef4444;
@@ -474,31 +517,31 @@
       text-align: center;
       padding: 16px 8px;
       font-size: 11px;
-      color: #6b7280;
+      color: var(--text-sub);
     }
     .footer-hint {
       margin-top: 10px;
       padding-top: 7px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-top: 1px solid var(--card-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
       font-size: 10px;
-      color: #9ca3af;
+      color: var(--text-sub);
     }
     kbd {
-      background: #232630;
+      background: var(--kbd-bg);
       padding: 1px 4px;
       border-radius: 4px;
       font-size: 9px;
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      border: 1px solid var(--kbd-border);
     }
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(5px);
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
@@ -509,11 +552,11 @@
     }
     .modal-box {
       width: 290px;
-      background: #151821;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: var(--modal-bg);
+      border: 1px solid var(--modal-border);
       border-radius: 12px;
       padding: 15px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
       text-align: center;
     }
     .modal-icon {
@@ -525,10 +568,11 @@
       font-size: 13.5px;
       font-weight: 700;
       margin-bottom: 5px;
+      color: var(--text-main);
     }
     .modal-desc {
       font-size: 11px;
-      color: #9ca3af;
+      color: var(--text-sub);
       margin-bottom: 12px;
       line-height: 1.4;
     }
@@ -546,8 +590,9 @@
       cursor: pointer;
     }
     .btn-modal-cancel {
-      background: #262935;
-      color: #ffffff;
+      background: var(--btn-cancel-bg);
+      color: var(--btn-cancel-text);
+      border: 1px solid var(--card-border);
     }
     .btn-modal-confirm {
       background: #ef4444;
@@ -567,7 +612,7 @@
     .edit-label {
       font-size: 10px;
       font-weight: 600;
-      color: #9ca3af;
+      color: var(--text-sub);
     }
     .popup-toast {
       position: fixed;
@@ -580,7 +625,7 @@
       font-weight: 600;
       padding: 4px 11px;
       border-radius: 999px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
       opacity: 0;
       pointer-events: none;
       transition: all 0.2s ease;
