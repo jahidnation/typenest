@@ -1,0 +1,107 @@
+@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
+
+.sat-suggestion-box {
+  position: absolute;
+  z-index: 2147483647;
+  display: none;
+  background: #181a20;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  padding: 4px;
+  min-width: 140px;
+  max-width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  user-select: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sat-suggestion-box.sat-visible {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sat-suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #d1d5db;
+  font-size: 13px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sat-suggestion-item:hover,
+.sat-suggestion-item.sat-selected {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.sat-match-text {
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.sat-suggestion-item:hover .sat-match-text,
+.sat-suggestion-item.sat-selected .sat-match-text {
+  color: #ffffff;
+}
+
+.sat-key-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sat-suggestion-item:hover .sat-key-hint,
+.sat-suggestion-item.sat-selected .sat-key-hint {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.sat-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  background: #181a20;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(20px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.sat-toast.sat-show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.sat-toast i {
+  color: #3b82f6;
+  font-size: 13px;
+}

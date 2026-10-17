@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Suggest",
+  "version": "1.0.0",
+  "description": "Smart real-time word and sentence auto-complete dictionary with Google spellcheck.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://suggestqueries.google.com/*",
+    "https://inputtools.google.com/*"
+  ],
+  "icons": {
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Suggest",
+    "default_icon": {
+      "16": "logo.png",
+      "48": "logo.png",
+      "128": "logo.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["styles.css"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["logo.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

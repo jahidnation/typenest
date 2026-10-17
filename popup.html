@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suggest</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      width: 350px;
+      padding: 16px;
+      background: #141518;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .brand-logo {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      border-radius: 4px;
+      display: block;
+    }
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #9ca3af;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+    .status-dot.disabled {
+      background: #ef4444;
+    }
+    .card {
+      background: #1c1d22;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .toggle-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+    .toggle-info i {
+      color: #3b82f6;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #2e3038;
+      border-radius: 20px;
+      transition: 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      transition: 0.2s ease;
+    }
+    input:checked + .slider {
+      background-color: #2563eb;
+      border-color: #2563eb;
+    }
+    input:checked + .slider:before {
+      transform: translateX(16px);
+    }
+    .backup-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .btn-action {
+      background: #1c1d22;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #d1d5db;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-action:hover {
+      background: #282a32;
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .tabs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .tabs {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      background: #1c1d22;
+      border-radius: 8px;
+      padding: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 2px;
+    }
+    .tab-btn {
+      padding: 6px 0;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 10.5px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .tab-count {
+      background: rgba(255, 255, 255, 0.18);
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .btn-bulk-clear {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #ef4444;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s ease, color 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-bulk-clear:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
+    .search-group {
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .search-input {
+      width: 100%;
+      background: #1c1d22;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 7px 28px 7px 30px;
+      color: #ffffff;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .search-input:focus {
+      border-color: #3b82f6;
+    }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7280;
+      font-size: 11px;
+      pointer-events: none;
+    }
+    .btn-clear-search {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      display: none;
+      font-size: 11px;
+      padding: 3px;
+    }
+    .btn-clear-search:hover {
+      color: #ffffff;
+    }
+    .input-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .input-group.hidden {
+      display: none;
+    }
+    .input-field {
+      background: #1c1d22;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: #ffffff;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .input-field:focus {
+      border-color: #3b82f6;
+    }
+    .shortcut-trigger-input {
+      width: 82px;
+    }
+    .shortcut-text-input {
+      flex: 1;
+    }
+    .btn-add {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 0 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 0.15s ease;
+      flex-shrink: 0;
+    }
+    .btn-add:hover {
+      background: #1d4ed8;
+    }
+    .dict-list {
+      max-height: 155px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding-right: 2px;
+    }
+    .dict-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .dict-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+    .dict-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #1c1d22;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: #d1d5db;
+      transition: background 0.12s ease;
+    }
+    .dict-item:hover {
+      background: #23252c;
+    }
+    .snippet-tag {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .snippet-arrow {
+      color: #6b7280;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+    .dict-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dict-del {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, color 0.15s ease;
+      flex-shrink: 0;
+    }
+    .dict-del:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 18px 8px;
+      font-size: 11.5px;
+      color: #6b7280;
+    }
+    .footer-hint {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10.5px;
+      color: #9ca3af;
+    }
+    kbd {
+      background: #2b2d33;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal-backdrop.show {
+      display: flex;
+    }
+    .modal-box {
+      width: 280px;
+      background: #1c1d22;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      text-align: center;
+    }
+    .modal-icon {
+      font-size: 26px;
+      color: #ef4444;
+      margin-bottom: 8px;
+    }
+    .modal-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .modal-desc {
+      font-size: 11.5px;
+      color: #9ca3af;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn-modal {
+      border: none;
+      padding: 7px 0;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-modal-cancel {
+      background: #2e3038;
+      color: #ffffff;
+    }
+    .btn-modal-confirm {
+      background: #ef4444;
+      color: #ffffff;
+    }
+    .popup-toast {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      z-index: 300;
+    }
+    .popup-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <img src="logo.png" alt="Suggest" class="brand-logo">
+      <span>Suggest</span>
+    </div>
+    <div class="status-badge">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Active</span>
+    </div>
+  </div>
+
+  <div class="card toggle-row">
+    <div class="toggle-info">
+      <i class="fa-solid fa-keyboard"></i>
+      <span>Auto-Complete & Snippets</span>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="toggleEnabled" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="backup-actions">
+    <button type="button" class="btn-action" id="btnExport">
+      <i class="fa-solid fa-file-export"></i>
+      <span>Export JSON</span>
+    </button>
+    <button type="button" class="btn-action" id="btnImport">
+      <i class="fa-solid fa-file-import"></i>
+      <span>Import JSON</span>
+    </button>
+  </div>
+
+  <input type="file" id="importFileInput" accept=".json" style="display: none;">
+
+  <div class="tabs-header">
+    <div class="tabs">
+      <button type="button" class="tab-btn active" id="tabShortcuts">
+        <i class="fa-solid fa-bolt"></i>
+        <span>Hotkeys</span>
+        <span class="tab-count" id="countShortcuts">0</span>
+      </button>
+      <button type="button" class="tab-btn" id="tabCustom">
+        <i class="fa-solid fa-list-check"></i>
+        <span>Custom</span>
+        <span class="tab-count" id="countCustom">0</span>
+      </button>
+      <button type="button" class="tab-btn" id="tabLearned">
+        <i class="fa-solid fa-brain"></i>
+        <span>Learned</span>
+        <span class="tab-count" id="countLearned">0</span>
+      </button>
+    </div>
+    <button type="button" class="btn-bulk-clear" id="btnBulkClear" title="Clear all items in this tab">
+      <i class="fa-solid fa-trash-can"></i>
+      <span>Clear</span>
+    </button>
+  </div>
+
+  <div class="search-group">
+    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+    <input type="text" class="search-input" id="searchFilterInput" placeholder="Search hotkeys, phrases, words...">
+    <button type="button" class="btn-clear-search" id="btnClearSearch">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <div class="input-group" id="shortcutInputGroup">
+    <input type="text" class="input-field shortcut-trigger-input" id="newShortcutTrigger" placeholder="e.g. /tnx" maxlength="20">
+    <input type="text" class="input-field shortcut-text-input" id="newShortcutText" placeholder="e.g. Thank You" maxlength="120">
+    <button type="button" class="btn-add" id="btnAddShortcut">
+      <i class="fa-solid fa-plus"></i>
+      <span>Add</span>
+    </button>
+  </div>
+
+  <div class="input-group hidden" id="customInputGroup">
+    <input type="text" class="input-field" style="flex:1;" id="newWordInput" placeholder="Add custom phrase..." maxlength="100">
+    <button type="button" class="btn-add" id="btnAddWord">
+      <i class="fa-solid fa-plus"></i>
+      <span>Add</span>
+    </button>
+  </div>
+
+  <div class="dict-list" id="dictList"></div>
+
+  <div class="footer-hint">
+    <span>Expand Hotkey: <kbd>Space</kbd> or <kbd>Tab</kbd></span>
+    <span>Safe: <i class="fa-solid fa-lock" style="color:#10b981;"></i> No Password Save</span>
+  </div>
+
+  <div class="modal-backdrop" id="confirmModal">
+    <div class="modal-box">
+      <div class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="modal-title" id="modalTitle">Clear All Items?</div>
+      <div class="modal-desc" id="modalDesc">Are you sure you want to permanently delete all items in this tab?</div>
+      <div class="modal-actions">
+        <button type="button" class="btn-modal btn-modal-cancel" id="btnModalCancel">Cancel</button>
+        <button type="button" class="btn-modal btn-modal-confirm" id="btnModalConfirm">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup-toast" id="popupToast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="popupToastText">Saved</span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
