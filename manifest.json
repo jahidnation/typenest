@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "TypeNext",
+  "name": "TypeNest",
   "version": "1.0.0",
   "description": "Smart real-time word and sentence auto-complete dictionary with Google spellcheck and magic translation.",
   "permissions": [
@@ -27,7 +27,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "TypeNext",
+    "default_title": "TypeNest",
     "default_icon": {
       "16": "logo.png",
       "48": "logo.png",

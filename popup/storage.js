@@ -55,7 +55,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "typenext_backup.json";
+      a.download = "typenest_backup.json";
       document.body.appendChild(a);
       a.click();
       setTimeout(() => {

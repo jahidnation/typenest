@@ -35,7 +35,7 @@
 
     magicImg = document.createElement("img");
     magicImg.src = logoUrl;
-    magicImg.alt = "TypeNext";
+    magicImg.alt = "TypeNest";
     magicImg.style.cssText = "width:100%;height:100%;object-fit:contain;border-radius:50%;display:block;pointer-events:none;transition:transform 0.2s ease;";
     magicBtn.appendChild(magicImg);
     document.body.appendChild(magicBtn);
