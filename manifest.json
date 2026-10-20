@@ -38,7 +38,12 @@
     {
       "matches": ["<all_urls>"],
       "css": ["styles.css"],
-      "js": ["content.js"],
+      "js": [
+        "content/avro.js",
+        "content/dom-utils.js",
+        "content/ui.js",
+        "content.js"
+      ],
       "run_at": "document_end"
     }
   ],
